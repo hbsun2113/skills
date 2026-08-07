@@ -1,0 +1,4 @@
+interface:
+  display_name: "闭环交付"
+  short_description: "用可证伪证据端到端闭环复杂软件变更并约束残余风险与影响范围"
+  default_prompt: "使用 $close-the-loop 追踪、实现并以端到端证据闭环这项软件变更。"

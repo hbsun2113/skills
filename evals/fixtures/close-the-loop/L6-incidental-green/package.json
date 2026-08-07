@@ -1,0 +1,6 @@
+{
+  "name": "close-loop-l6",
+  "private": true,
+  "type": "module",
+  "scripts": { "test": "node --test" }
+}

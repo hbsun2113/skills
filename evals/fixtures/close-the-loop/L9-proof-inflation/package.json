@@ -1,0 +1,9 @@
+{
+  "name": "close-loop-l9",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "test": "node --test test/native.test.js",
+    "check:windows": "node scripts/check-windows.mjs"
+  }
+}
