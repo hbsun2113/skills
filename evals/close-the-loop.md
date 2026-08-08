@@ -91,16 +91,41 @@
 - **通过：** 只修改标签和断言，运行聚焦测试，并给出精简结果；不创建账本、诊断、验收表或冷审。
 - **失败：** 扩大范围、编造无关风险，或给任务增加完整路径仪式。
 
+### L11 - 边界反例遗漏（Boundary counterexample omission）
+
+- **Fixture：** 使用未参与协议编写的全新有状态 holdout；不得复用已知修复题。
+- **背景：** 首轮测试覆盖成功、失败和普通重启，但实现跨越持久状态与外部效果、解析或资源生命周期边界，仍可能在一个未建模的前置条件或中断点失败。
+- **任务：** “完成这项高风险变更并证明恢复行为。”
+- **通过：** 从真实路径选择至少一个相关前置条件碰撞和一个 durable/effect 中断边界；检查在旧行为上可失败；把事后发现与预注册证据分开。
+- **失败：** 只重跑首轮成功路径或泛称“覆盖了边界”，没有尝试推翻输入规范、标记唯一、普通文件、及时关闭或状态等于效果等隐含假设。
+
+### L12 - 能力域外默许（Capability-domain ambiguity）
+
+- **Fixture：** 使用包含不可结构化复制值、带内部槽对象或合法 legacy 标记碰撞的全新 holdout。
+- **背景：** 常见 JSON-like 值工作正常，但 fallback 可能复用原引用、把旧数据误判为新格式，或在部分效果之后才暴露不支持。
+- **任务：** “保证快照或迁移不会让调用方修改内部状态或丢失旧数据。”
+- **通过：** 明确定义支持域；在责任边界安全复制、提供只读能力或在效果前明确拒绝；用可修改反例或 schema 碰撞证明内部状态和旧数据保持不变。
+- **失败：** 静默返回原引用、仅冻结仍可变的容器、只凭单个普通字段识别 envelope，或让不支持错误延迟到下游 handler/持久化之后。
+
+### L13 - 规模正确但不可用（Scale-disproportionate correctness）
+
+- **Fixture：** 使用任务明确声明大规模输入、但小样例功能测试都能通过的全新 holdout。
+- **背景：** 实现可能每条记录执行同步持久化、全量复制或平方扫描，在几十万条规模上不可用。
+- **任务：** “让本地批处理可靠恢复，并适用于题目给定规模。”
+- **通过：** 计算或测量关键 I/O/扫描次数；在不牺牲崩溃语义的前提下使用比例合理的批次或索引；把性能证据与功能证据分开报告。
+- **失败：** 只用几条记录证明正确，忽略每记录 fsync、全量重写或平方复杂度；或没有测量就声称满足规模。
+
 ## Results log（结果记录）
 
-| Date | Agent / model | Skill version | L1 | L2 | L3 | L4 | L5 | L6 | L7 | L8 | L9 | L10 | Notes |
-| --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- |
-| 2026-08-07 | Codex fresh sub-agent baseline | none | - | - | - | pass | pass | - | partial | - | - | pass | L7 遗漏准入计量、失败重试和清理负向选择。 |
-| 2026-08-07 | Codex fresh sub-agent candidate | 0.1.0 | - | - | - | pass | pass | - | pass | - | - | pass | 候选版本补充畸形配置证明，把陈旧请求取消标为残余项，并闭合 L7 生命周期。 |
-| 2026-08-07 | Codex fresh sub-agent candidate | 0.2.0 | - | - | - | - | - | - | pass | - | - | pass | L7 通过 7/7，包括部分失败重试和审查降级路径；L10 保持轻量。 |
-| 2026-08-07 | Codex isolated follow-up candidate | 0.3.0 | pass | pass | pass | pass | pass | pass | partial | pass | pass | pass | L7 闭合正常 teardown，但错误排除了同资源 sweep 选择和多释放步骤的部分失败。 |
-| 2026-08-07 | Codex isolated follow-up candidate | 0.4.0 | - | - | - | - | - | - | pass | - | - | pass | 生命周期规则修订后的定向回归：L7 闭合部分失败和 sweep 选择；L10 仍保持轻量。 |
-| 2026-08-07 | Codex isolated Chinese candidate | 0.5.0 | - | - | - | - | pass | - | partial | - | - | pass | 中文语义转换后的定向回归：L5 关闭乱序响应；L10 保持轻量；L7 的诱饵未进入新选择器，不能推翻选择范围仍然过宽。 |
-| 2026-08-07 | Codex isolated Chinese candidate | 0.5.1 | - | - | - | - | - | - | partial | - | - | - | L7 识别并诚实报告了命名前缀所有权残余项，但没有闭合它；补充标准路径任务通过且未引入完整路径仪式。 |
-| 2026-08-07 | Codex isolated Chinese candidate | 0.5.2 | - | - | - | - | - | - | partial | - | - | - | L7 使用独立登记并覆盖部分失败，但会错误认领启动前同路径资源，且进程内 WeakMap 无法支持重启后 sweep。标准路径继续沿用 0.5.1 的通过结果。 |
-| 2026-08-07 | Codex isolated Chinese candidate | 0.5.3 | - | - | - | - | - | - | pass | - | - | - | L7 拒绝认领同路径既有资源；未登记的同域诱饵存活；部分失败可重试；同一 host 上重建 registry/清理器后仍可恢复。未声称真实进程或 host 重建已验证。 |
+| Date | Agent / model | Skill version | L1 | L2 | L3 | L4 | L5 | L6 | L7 | L8 | L9 | L10 | L11 | L12 | L13 | Notes |
+| --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- |
+| 2026-08-07 | Codex fresh sub-agent baseline | none | - | - | - | pass | pass | - | partial | - | - | pass | - | - | - | L7 遗漏准入计量、失败重试和清理负向选择。 |
+| 2026-08-07 | Codex fresh sub-agent candidate | 0.1.0 | - | - | - | pass | pass | - | pass | - | - | pass | - | - | - | 候选版本补充畸形配置证明，把陈旧请求取消标为残余项，并闭合 L7 生命周期。 |
+| 2026-08-07 | Codex fresh sub-agent candidate | 0.2.0 | - | - | - | - | - | - | pass | - | - | pass | - | - | - | L7 通过 7/7，包括部分失败重试和审查降级路径；L10 保持轻量。 |
+| 2026-08-07 | Codex isolated follow-up candidate | 0.3.0 | pass | pass | pass | pass | pass | pass | partial | pass | pass | pass | - | - | - | L7 闭合正常 teardown，但错误排除了同资源 sweep 选择和多释放步骤的部分失败。 |
+| 2026-08-07 | Codex isolated follow-up candidate | 0.4.0 | - | - | - | - | - | - | pass | - | - | pass | - | - | - | 生命周期规则修订后的定向回归：L7 闭合部分失败和 sweep 选择；L10 仍保持轻量。 |
+| 2026-08-07 | Codex isolated Chinese candidate | 0.5.0 | - | - | - | - | pass | - | partial | - | - | pass | - | - | - | 中文语义转换后的定向回归：L5 关闭乱序响应；L10 保持轻量；L7 的诱饵未进入新选择器，不能推翻选择范围仍然过宽。 |
+| 2026-08-07 | Codex isolated Chinese candidate | 0.5.1 | - | - | - | - | - | - | partial | - | - | - | - | - | - | L7 识别并诚实报告了命名前缀所有权残余项，但没有闭合它；补充标准路径任务通过且未引入完整路径仪式。 |
+| 2026-08-07 | Codex isolated Chinese candidate | 0.5.2 | - | - | - | - | - | - | partial | - | - | - | - | - | - | L7 使用独立登记并覆盖部分失败，但会错误认领启动前同路径资源，且进程内 WeakMap 无法支持重启后 sweep。标准路径继续沿用 0.5.1 的通过结果。 |
+| 2026-08-07 | Codex isolated Chinese candidate | 0.5.3 | - | - | - | - | - | - | pass | - | - | - | - | - | - | L7 拒绝认领同路径既有资源；未登记的同域诱饵存活；部分失败可重试；同一 host 上重建 registry/清理器后仍可恢复。未声称真实进程或 host 重建已验证。 |
+| 2026-08-07 | Codex Phase 2 forward evaluation | 0.6.0 | - | - | - | - | - | - | - | - | - | - | partial | pass | pass | 三个全新 holdout 的契约对齐检查与 baseline/v1 同为 18/18；事后故障注入中 v1/v2 均通过 2/2、baseline 为 0/2。v2 未证明优于 v1，且总墙钟时间为 baseline 的 2.05 倍。 |
